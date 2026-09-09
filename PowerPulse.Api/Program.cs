@@ -11,6 +11,8 @@ builder.Services.AddDbContext<PowerPulseDbContext>(options =>
         builder.Configuration.GetConnectionString("PowerPulseDatabase")));
 
 var app = builder.Build();
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
 if (app.Environment.IsDevelopment())
 {

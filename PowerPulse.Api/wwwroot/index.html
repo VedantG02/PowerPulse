@@ -1,0 +1,190 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PowerPulse Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <main>
+        <header>
+            <div>
+                <p class="eyebrow">ENERGY MONITORING</p>
+                <h1>PowerPulse</h1>
+                <p class="subtitle">Live telemetry from <strong id="device-name">—</strong></p>
+            </div>
+            <div class="connection-status">
+                <span class="status-dot"></span>
+                <span id="status">Loading…</span>
+            </div>
+        </header>
+
+        <section class="grid">
+            <article class="card">
+                <p class="label">Current power</p>
+                <p class="value" id="power">—</p>
+                <p class="detail">Latest measurement</p>
+            </article>
+
+            <article class="card">
+                <p class="label">Voltage</p>
+                <p class="value" id="voltage">—</p>
+                <p class="detail">Supply voltage</p>
+            </article>
+
+            <article class="card">
+                <p class="label">Current</p>
+                <p class="value" id="current">—</p>
+                <p class="detail">Current draw</p>
+            </article>
+
+            <article class="card">
+                <p class="label">Readings stored</p>
+                <p class="value" id="reading-count">—</p>
+                <p class="detail">In local SQLite database</p>
+            </article>
+        </section>
+
+        <section class="panel">
+            <div class="panel-heading">
+                <div>
+                    <h2>Power trend</h2>
+                    <p>Latest 20 readings</p>
+                </div>
+                <span id="last-updated">—</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="power-chart"></canvas>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-heading">
+                <div>
+                    <h2>Recent activity</h2>
+                    <p>Newest readings received by the API</p>
+                </div>
+            </div>
+            <div id="readings" class="readings">Loading readings…</div>
+        </section>
+    </main>
+
+    <script>
+        let powerChart;
+
+        function formatNumber(value) {
+            return Number(value).toFixed(2).replace(/\.00$/, "");
+        }
+
+        function initialiseChart() {
+            powerChart = new Chart(document.getElementById("power-chart"), {
+                type: "line",
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: "Power (W)",
+                        data: [],
+                        borderColor: "#5ee6a8",
+                        backgroundColor: "rgba(94, 230, 168, 0.14)",
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: "#9eafd5", maxTicksLimit: 8 },
+                            grid: { display: false }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: "#9eafd5",
+                                callback: value => `${value} W`
+                            },
+                            grid: { color: "rgba(158, 175, 213, 0.12)" }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function loadReadings() {
+            try {
+                const response = await fetch("/api/readings");
+
+                if (!response.ok) {
+                    throw new Error("Could not load readings");
+                }
+
+                const readings = await response.json();
+                const latest = readings[0];
+
+                if (!latest) {
+                    document.getElementById("status").textContent = "No readings received";
+                    return;
+                }
+
+                document.getElementById("status").textContent = "Device connected";
+                document.getElementById("device-name").textContent = latest.deviceId;
+                document.getElementById("power").textContent =
+                    `${formatNumber(latest.powerWatts)} W`;
+                document.getElementById("voltage").textContent =
+                    `${formatNumber(latest.voltage)} V`;
+                document.getElementById("current").textContent =
+                    `${formatNumber(latest.current)} A`;
+                document.getElementById("reading-count").textContent = readings.length;
+                document.getElementById("last-updated").textContent =
+                    `Updated ${new Date().toLocaleTimeString()}`;
+
+                const chartReadings = readings.slice(0, 20).reverse();
+
+                powerChart.data.labels = chartReadings.map(reading =>
+                    new Date(reading.timestampUtc).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit"
+                    }));
+
+                powerChart.data.datasets[0].data = chartReadings.map(
+                    reading => reading.powerWatts);
+
+                powerChart.update();
+
+                document.getElementById("readings").innerHTML = readings
+                    .slice(0, 8)
+                    .map(reading => `
+                            <div class="reading">
+                                <div>
+                                    <strong>${reading.deviceId}</strong>
+                                    <span>${new Date(reading.timestampUtc).toLocaleTimeString()}</span>
+                                </div>
+                                <div class="reading-values">
+                                    <strong>${formatNumber(reading.powerWatts)} W</strong>
+                                    <span>${formatNumber(reading.voltage)} V ·
+                                    ${formatNumber(reading.current)} A</span>
+                                </div>
+                            </div>
+                        `)
+                    .join("");
+            }
+            catch {
+                document.getElementById("status").textContent = "API unavailable";
+            }
+        }
+
+        initialiseChart();
+        loadReadings();
+        setInterval(loadReadings, 5000);
+    </script>
+</body>
+</html>
