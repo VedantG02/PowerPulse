@@ -1,0 +1,24 @@
+@PowerPulse_Api_HostAddress = https://localhost:7292
+
+### Check API health
+GET {{PowerPulse_Api_HostAddress}}/api/health
+Accept: application/json
+
+###
+
+### Send an energy reading
+POST {{PowerPulse_Api_HostAddress}}/api/readings
+Content-Type: application/json
+
+{
+  "deviceId": "esp32-lab-01",
+  "voltage": 5.0,
+  "current": 0.28,
+  "powerWatts": 1.4
+}
+
+###
+
+### View received readings
+GET {{PowerPulse_Api_HostAddress}}/api/readings
+Accept: application/json
