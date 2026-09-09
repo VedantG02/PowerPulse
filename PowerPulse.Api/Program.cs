@@ -1,26 +1,29 @@
+using Microsoft.EntityFrameworkCore;
+using PowerPulse.Api.Data;
 using PowerPulse.Api.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
-builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-var readings = new List<EnergyReading>();
+builder.Services.AddDbContext<PowerPulseDbContext>(options =>
+    options.UseSqlite(
+        builder.Configuration.GetConnectionString("PowerPulseDatabase")));
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
 
+using (var scope = app.Services.CreateScope())
+{
+    var database = scope.ServiceProvider.GetRequiredService<PowerPulseDbContext>();
+    database.Database.EnsureCreated();
+}
+
 app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
-app.MapControllers();
 
 app.MapGet("/api/health", () =>
 {
@@ -32,20 +35,28 @@ app.MapGet("/api/health", () =>
     });
 });
 
-
-app.MapPost("/api/readings", (EnergyReading reading) =>
+app.MapPost("/api/readings", async (
+    EnergyReading reading,
+    PowerPulseDbContext database) =>
 {
+    reading.Id = Guid.NewGuid();
     reading.TimestampUtc = DateTime.UtcNow;
-    readings.Add(reading);
+
+    database.EnergyReadings.Add(reading);
+    await database.SaveChangesAsync();
 
     return Results.Created(
-        $"/api/readings/{reading.DeviceId}",
+        $"/api/readings/{reading.Id}",
         reading);
 });
 
-app.MapGet("/api/readings", () =>
+app.MapGet("/api/readings", async (PowerPulseDbContext database) =>
 {
-    return Results.Ok(readings
-        .OrderByDescending(reading => reading.TimestampUtc));
+    var readings = await database.EnergyReadings
+        .OrderByDescending(reading => reading.TimestampUtc)
+        .ToListAsync();
+
+    return Results.Ok(readings);
 });
+
 app.Run();

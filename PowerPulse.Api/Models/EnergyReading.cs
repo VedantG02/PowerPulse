@@ -2,6 +2,8 @@
 
 public class EnergyReading
 {
+    public Guid Id { get; set; } = Guid.NewGuid();
+
     public string DeviceId { get; set; } = string.Empty;
 
     public decimal Voltage { get; set; }
