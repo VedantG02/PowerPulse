@@ -41,9 +41,9 @@
             </article>
 
             <article class="card">
-                <p class="label">Readings stored</p>
-                <p class="value" id="reading-count">—</p>
-                <p class="detail">In local SQLite database</p>
+                <p class="label">Energy used today</p>
+                <p class="value" id="energy">—</p>
+                <p class="detail" id="energy-detail">Calculating from received readings</p>
             </article>
         </section>
 
@@ -127,6 +127,8 @@
                 }
 
                 const readings = await response.json();
+                const summaryResponse = await fetch("/api/summary");
+                const summary = await summaryResponse.json();
                 const latest = readings[0];
 
                 if (!latest) {
@@ -134,17 +136,22 @@
                     return;
                 }
 
-                document.getElementById("status").textContent = "Device connected";
-                document.getElementById("device-name").textContent = latest.deviceId;
-                document.getElementById("power").textContent =
-                    `${formatNumber(latest.powerWatts)} W`;
-                document.getElementById("voltage").textContent =
-                    `${formatNumber(latest.voltage)} V`;
-                document.getElementById("current").textContent =
-                    `${formatNumber(latest.current)} A`;
-                document.getElementById("reading-count").textContent = readings.length;
-                document.getElementById("last-updated").textContent =
-                    `Updated ${new Date().toLocaleTimeString()}`;
+                document.getElementById("status").textContent =
+                    summary.isPowerAlert ? "High power alert" : "Device connected";
+
+                document.getElementById("device-name").textContent = summary.deviceId;
+
+                document.getElementById("energy").textContent = `${formatNumber(summary.estimatedEnergyWh)} Wh`;
+
+                document.getElementById("energy-detail").textContent = `Peak today: ${formatNumber(summary.peakPowerWatts)} W`;
+
+                document.getElementById("power").textContent = `${formatNumber(latest.powerWatts)} W`;
+
+                document.getElementById("voltage").textContent = `${formatNumber(latest.voltage)} V`;
+
+                document.getElementById("current").textContent = `${formatNumber(latest.current)} A`;
+
+                document.getElementById("last-updated").textContent = `Updated ${new Date().toLocaleTimeString()}`;
 
                 const chartReadings = readings.slice(0, 20).reverse();
 

@@ -3,7 +3,7 @@ using PowerPulse.Api.Data;
 using PowerPulse.Api.Models;
 
 var builder = WebApplication.CreateBuilder(args);
-
+var powerAlertThresholdWatts = builder.Configuration.GetValue<decimal>("PowerPulse:PowerAlertThresholdWatts");
 builder.Services.AddOpenApi();
 
 builder.Services.AddDbContext<PowerPulseDbContext>(options =>
@@ -59,6 +59,54 @@ app.MapGet("/api/readings", async (PowerPulseDbContext database) =>
         .ToListAsync();
 
     return Results.Ok(readings);
+});
+
+app.MapGet("/api/summary", async (PowerPulseDbContext database) =>
+{
+    var today = DateTime.UtcNow.Date;
+
+    var readings = await database.EnergyReadings
+        .Where(reading => reading.TimestampUtc >= today)
+        .OrderBy(reading => reading.TimestampUtc)
+        .ToListAsync();
+
+    if (readings.Count == 0)
+    {
+        return Results.NotFound(new
+        {
+            message = "No readings have been received today."
+        });
+    }
+
+    var latest = readings[^1];
+
+    decimal estimatedEnergyWh = 0;
+
+    for (var index = 1; index < readings.Count; index++)
+    {
+        var previous = readings[index - 1];
+        var current = readings[index];
+
+        var hoursBetweenReadings =
+            (decimal)(current.TimestampUtc - previous.TimestampUtc).TotalHours;
+
+        var averagePowerBetweenReadings =
+            (previous.PowerWatts + current.PowerWatts) / 2;
+
+        estimatedEnergyWh += averagePowerBetweenReadings * hoursBetweenReadings;
+    }
+
+    return Results.Ok(new
+    {
+        deviceId = latest.DeviceId,
+        latestPowerWatts = latest.PowerWatts,
+        averagePowerWatts = Math.Round(readings.Average(reading => reading.PowerWatts), 2),
+        peakPowerWatts = readings.Max(reading => reading.PowerWatts),
+        estimatedEnergyWh = Math.Round(estimatedEnergyWh, 3),
+        powerAlertThresholdWatts,
+        isPowerAlert = latest.PowerWatts >= powerAlertThresholdWatts,
+        readingsToday = readings.Count
+    });
 });
 
 app.Run();
