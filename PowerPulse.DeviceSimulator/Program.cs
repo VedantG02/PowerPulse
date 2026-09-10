@@ -18,13 +18,17 @@ while (true)
     var voltage = 5.0;
     var current = Math.Round(0.10 + (random.NextDouble() * 0.60), 2);
     var powerWatts = Math.Round(voltage * current, 2);
+    var temperatureCelsius = Math.Round(24 + (random.NextDouble() * 6), 1);
+    var humidityPercent = Math.Round(45 + (random.NextDouble() * 20), 1);
 
     var reading = new
     {
         deviceId,
         voltage,
         current,
-        powerWatts
+        powerWatts,
+        temperatureCelsius,
+        humidityPercent
     };
 
     var response = await client.PostAsJsonAsync("/api/readings", reading);

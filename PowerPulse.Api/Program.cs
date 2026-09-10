@@ -22,7 +22,7 @@ if (app.Environment.IsDevelopment())
 using (var scope = app.Services.CreateScope())
 {
     var database = scope.ServiceProvider.GetRequiredService<PowerPulseDbContext>();
-    database.Database.EnsureCreated();
+    database.Database.Migrate();
 }
 
 app.UseHttpsRedirection();
@@ -100,6 +100,8 @@ app.MapGet("/api/summary", async (PowerPulseDbContext database) =>
     {
         deviceId = latest.DeviceId,
         latestPowerWatts = latest.PowerWatts,
+        temperatureCelsius = latest.TemperatureCelsius,
+        humidityPercent = latest.HumidityPercent,
         averagePowerWatts = Math.Round(readings.Average(reading => reading.PowerWatts), 2),
         peakPowerWatts = readings.Max(reading => reading.PowerWatts),
         estimatedEnergyWh = Math.Round(estimatedEnergyWh, 3),

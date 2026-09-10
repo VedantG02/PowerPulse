@@ -198,3 +198,35 @@ h2 {
         text-align: left;
     }
 }
+.environment-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.environment-metric {
+    padding: 22px;
+    border: 1px solid #2c426f;
+    border-radius: 12px;
+    background: rgba(9, 16, 31, 0.42);
+}
+
+    .environment-metric span {
+        display: block;
+        color: #9eafd5;
+        font-size: 0.9rem;
+    }
+
+    .environment-metric strong {
+        display: block;
+        margin-top: 10px;
+        color: #66c9ff;
+        font-size: 2rem;
+    }
+
+@media (max-width: 600px) {
+    .environment-grid {
+        grid-template-columns: 1fr;
+    }
+}

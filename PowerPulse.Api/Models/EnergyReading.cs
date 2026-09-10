@@ -12,5 +12,9 @@ public class EnergyReading
 
     public decimal PowerWatts { get; set; }
 
+    public decimal TemperatureCelsius { get; set; }
+
+    public decimal HumidityPercent { get; set; }
+
     public DateTime TimestampUtc { get; set; } = DateTime.UtcNow;
 }

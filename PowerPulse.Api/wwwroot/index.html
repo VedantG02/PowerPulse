@@ -50,6 +50,27 @@
         <section class="panel">
             <div class="panel-heading">
                 <div>
+                    <h2>Environment</h2>
+                    <p>Latest DHT11-style telemetry</p>
+                </div>
+            </div>
+
+            <div class="environment-grid">
+                <div class="environment-metric">
+                    <span>Temperature</span>
+                    <strong id="temperature">—</strong>
+                </div>
+
+                <div class="environment-metric">
+                    <span>Humidity</span>
+                    <strong id="humidity">—</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-heading">
+                <div>
                     <h2>Power trend</h2>
                     <p>Latest 20 readings</p>
                 </div>
@@ -144,6 +165,10 @@
                 document.getElementById("energy").textContent = `${formatNumber(summary.estimatedEnergyWh)} Wh`;
 
                 document.getElementById("energy-detail").textContent = `Peak today: ${formatNumber(summary.peakPowerWatts)} W`;
+
+                document.getElementById("temperature").textContent = `${formatNumber(summary.temperatureCelsius)} °C`;
+
+                document.getElementById("humidity").textContent = `${formatNumber(summary.humidityPercent)} %`;
 
                 document.getElementById("power").textContent = `${formatNumber(latest.powerWatts)} W`;
 
